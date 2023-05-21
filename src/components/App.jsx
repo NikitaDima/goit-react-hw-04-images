@@ -43,7 +43,7 @@ export default function App() {
       .finally(() => {
         setLoanding(false);
       });
-  }, [page, searchQuery]);
+  }, [hits.length, page, searchQuery]);
 
   const handleFormSubmit = valueInput => {
     if (searchQuery === valueInput) {
