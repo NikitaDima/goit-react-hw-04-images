@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { toastOptions, audioOptions } from 'serveses/utils';
@@ -16,34 +16,41 @@ export default function App() {
   const [hits, setHits] = useState([]);
   const [totalHits, setTotalHits] = useState(0);
   const [largeImageURL, setLargeImageURL] = useState('');
-  const [loading, setLoanding] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const hitsLengthRef = useRef(hits.length);
+  useEffect(() => {
+    const newSearchQuery = setSearchQuery(prevSearchQuery => prevSearchQuery);
+    const newPage = setPage(prevPage => prevPage);
+    if (
+      searchQuery !== '' &&
+      (searchQuery !== newSearchQuery || newPage !== page)
+    ) {
+      setLoading(true);
+      getImages(searchQuery, page)
+        .then(({ hits: newHits, totalHits }) => {
+          if (searchQuery.trim() === '' || totalHits === 0) {
+            toast.error('Введіть валідне значення', toastOptions);
+            return;
+          }
+          if (
+            (hitsLengthRef.current !== 0 && newHits.length < 12) ||
+            (hitsLengthRef.current === 0 && newHits.length === totalHits)
+          ) {
+            toast.info('Більше немає картинок', toastOptions);
+          }
+          setHits(prevHits => [...prevHits, ...newHits]);
+          setTotalHits(totalHits);
+        })
+        .catch(error => console.error(error.response))
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [searchQuery, page]);
 
   useEffect(() => {
-    if (searchQuery === '') {
-      return;
-    }
-
-    setLoanding(true);
-    getImages(searchQuery, page)
-      .then(({ hits: newHits, totalHits }) => {
-        if (searchQuery.trim() === '' || totalHits === 0) {
-          toast.error('Введіть валідне значення', toastOptions);
-          return;
-        }
-        if (
-          (hits.length !== 0 && newHits.length < 12) ||
-          (hits.length === 0 && newHits.length === totalHits)
-        ) {
-          toast.info('Більше немає картинок', toastOptions);
-        }
-        setHits(prevHits => [...prevHits, ...newHits]);
-        setTotalHits(totalHits);
-      })
-      .catch(error => console.error(error.response))
-      .finally(() => {
-        setLoanding(false);
-      });
-  }, [hits.length, page, searchQuery]);
+    hitsLengthRef.current = hits.length;
+  }, [hits]);
 
   const handleFormSubmit = valueInput => {
     if (searchQuery === valueInput) {
@@ -101,33 +108,33 @@ export default function App() {
 //     loading: false,
 //   };
 
-//   componentDidUpdate(_, prevState) {
-//     const { searchQuery, page } = this.state;
-//     if (searchQuery !== prevState.searchQuery || prevState.page !== page) {
-//       this.setState({ loading: true });
-//       getImages(searchQuery, page)
-//         .then(({ hits: newHits, totalHits }) => {
-//           if (this.state.searchQuery.trim() === '' || totalHits === 0) {
-//             toast.error('Введіть валідне значення', toastOptions);
-//             return;
-//           }
-//           if (
-//             (prevState.hits.length !== 0 && newHits.length < 12) ||
-//             (prevState.hits.length === 0 && newHits.length === totalHits)
-//           ) {
-//             toast.info('Більше немає картинок', toastOptions);
-//           }
-//           this.setState(prevState => ({
-//             hits: [...prevState.hits, ...newHits],
-//             totalHits,
-//           }));
-//         })
-//         .catch(error => console.error(error.response))
-//         .finally(() => {
-//           this.setState({ loading: false });
-//         });
-//     }
+// componentDidUpdate(_, prevState) {
+//   const { searchQuery, page } = this.state;
+//   if (searchQuery !== prevState.searchQuery || prevState.page !== page) {
+//     this.setState({ loading: true });
+//     getImages(searchQuery, page)
+//       .then(({ hits: newHits, totalHits }) => {
+//         if (this.state.searchQuery.trim() === '' || totalHits === 0) {
+//           toast.error('Введіть валідне значення', toastOptions);
+//           return;
+//         }
+//         if (
+//           (prevState.hits.length !== 0 && newHits.length < 12) ||
+//           (prevState.hits.length === 0 && newHits.length === totalHits)
+//         ) {
+//           toast.info('Більше немає картинок', toastOptions);
+//         }
+//         this.setState(prevState => ({
+//           hits: [...prevState.hits, ...newHits],
+//           totalHits,
+//         }));
+//       })
+//       .catch(error => console.error(error.response))
+//       .finally(() => {
+//         this.setState({ loading: false });
+//       });
 //   }
+// }
 
 //   handleFormSubmit = valueInput => {
 //     if (this.state.searchQuery === valueInput) {
